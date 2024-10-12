@@ -1,6 +1,10 @@
+import 'package:fin_mentor/SplashScreen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+Future<void> main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -11,67 +15,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: "Fin Mentor",
+      debugShowCheckedModeBanner: false,
+      
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrangeAccent),
         useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          elevation: 4
+        )
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-          title: const Text("Fin Mentor", style: TextStyle(color: Colors.white),),
-
-        ),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(50.0),
-              child: Container(
-                height: 200,
-                width: 100,
-                child: InkWell(
-                  onTap: (){
-                    print("On God, fr fr");
-                  },
-                  child: Card(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text("I love Homework!",
-                        style: TextStyle(fontSize: 24, color: Colors.white),),
-                      ],
-                    ),
-                  color: Colors.blue,),
-                ),
-              ),
-            ),
-            Container(
-              height: 200,
-              width: 100,
-
-              child: InkWell(
-                onTap: (){
-                  print("Gimmie Somethin");
-                },
-                child: Card(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("I don't like Homework!",
-                      textAlign: TextAlign.center,
-
-                      style: TextStyle(fontSize: 24, color: Color(0xFF171717)),),
-                    ],
-                  ),
-                  color: Colors.blue,),
-              ),
-            ),
-          ],
-        ),
-      )
+      home: const SplashScreen(),
     );
   }
 }
