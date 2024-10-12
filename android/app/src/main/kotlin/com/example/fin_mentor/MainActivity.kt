@@ -1,4 +1,4 @@
-package com.example.fin_mentor
+package com.codingmind.fin_mentor
 
 import io.flutter.embedding.android.FlutterActivity
 
