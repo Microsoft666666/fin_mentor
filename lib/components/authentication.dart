@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,17 +11,91 @@ class AuthenticationHelper {
   get user => _auth.currentUser;
 
   get uid => user.uid;
+  bool isAdmin = false;
+  final _userController = StreamController<User?>.broadcast();
+
+  AuthenticationHelper() {
+    _auth.authStateChanges().listen((User? user) async {
+      if (user != null) {
+        await _fetchUserRole();
+      }
+      _userController.add(user);
+    });
+  }
+  Stream<User?> get userStream => _userController.stream;
 
   // Creates a new user with email and password
-  Future<String?> signUp({required String email, required String password, required String username}) async {
+  Future<Map<String, dynamic>> signIn({required String email, required String password}) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      await _createUserDocument(username: username, email: email);
-      return null;
+      // Sign in the user
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await _saveLoginState();
+
+      // Fetch the user's role from Firestore
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      bool isAdmin = false;
+      if (doc.exists) {
+        isAdmin = doc.get('isAdmin') ?? false;
+      }
+
+      // Return null error and the isAdmin flag
+      return {'error': null, 'isAdmin': isAdmin};
     } on FirebaseAuthException catch (e) {
-      return e.message;
+      // Return the error message and default isAdmin to false
+      return {'error': e.message, 'isAdmin': false};
     }
   }
+
+  // Modify the signUp method to include the isAdmin flag
+  Future<Map<String, dynamic>> signUp({
+    required String email,
+    required String password,
+    required String username,
+    bool isAdmin = false,
+  }) async {
+    try {
+      // Create a new user
+      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+
+      // Create user document in Firestore with the isAdmin flag
+      await _createUserDocument(username: username, email: email, isAdmin: isAdmin);
+
+      // Return null error and the isAdmin flag
+      return {'error': null, 'isAdmin': isAdmin};
+    } on FirebaseAuthException catch (e) {
+      // Return the error message and default isAdmin to false
+      return {'error': e.message, 'isAdmin': false};
+    }
+  }
+
+
+  // Fetch the user's role from Firestore
+  Future<void> _fetchUserRole() async {
+    DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      print("firestore is saying that user is admin: " + doc.get('isAdmin').toString());
+      isAdmin = doc.get('isAdmin');
+    } else {
+      isAdmin = false;
+    }
+  }
+
+  // Modify the _createUserDocument to include isAdmin
+  Future<void> _createUserDocument({
+    required String username,
+    required String email,
+    bool isAdmin = false, // Add this parameter
+  }) async {
+    final userDoc = _firestore.collection('users').doc(uid);
+    final userData = {
+      'username': username,
+      'email': email,
+      'isAdmin': isAdmin,
+      'dateJoined': DateTime.now().millisecondsSinceEpoch / 1000,
+    };
+    await userDoc.set(userData);
+  }
+
   Future<String?> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -31,17 +107,10 @@ class AuthenticationHelper {
   String getUID() {
     return user.uid;
   }
-
-  // Sign in method
-  Future<String?> signIn({required String email, required String password}) async {
-    try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      _saveLoginState();
-      return null;
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    }
+  Stream<User?> userChanges() {
+    return _auth.authStateChanges();
   }
+  // Sign in method
 
   Future<void> _saveLoginState() async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,36 +125,19 @@ class AuthenticationHelper {
     return prefs.getBool('isLoggedIn') ?? false;
   }
 
-  Future<void> _createUserDocument({required String username, required String email}) async {
-    final userDoc = _firestore.collection('users').doc(uid);
-    final userData = {
-      'username': username,
-      'email': email,
-      'deviceID': '',
-      'dateJoined':DateTime.now().millisecondsSinceEpoch / 1000,
-    };
-    await userDoc.set(userData);
-  }
-  Future signOut() async {
-    await _auth.signOut();
-    await _clearLoginState();
-  }
-  Future<List<int>> getWaterLevel(String date) async {
-    DocumentReference docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('water-drank')
-        .doc(date);
+  Future<void> signOut() async {
+    try {
+      // Sign out from Firebase Auth
+      await _auth.signOut();
 
-    DocumentSnapshot doc = await docRef.get();
-    if (doc.exists) {
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      List<int> waterLevels = List<int>.from(data['drank']);
-      print('Water levels: $waterLevels'); // Debug print
-      return waterLevels;
-    } else {
-      print('No data found for date $date'); // Debug print
-      return [];
+      // Clear login state from SharedPreferences
+      await _clearLoginState();
+
+      // Reset the isAdmin flag
+      this.isAdmin = false;
+    } catch (e) {
+      print('Error signing out: $e');
+      // Optionally, handle errors here
     }
   }
   Future<void> deleteAccount(String password) async {
@@ -107,5 +159,6 @@ class AuthenticationHelper {
       print('Error deleting account: $e');
     }
   }
+
 
 }

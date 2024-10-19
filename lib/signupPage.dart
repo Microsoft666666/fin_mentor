@@ -1,5 +1,7 @@
+import 'package:fin_mentor/admin_dashboard.dart';
 import 'package:fin_mentor/components/authentication.dart';
 import 'package:fin_mentor/dashboard.dart';
+import 'package:fin_mentor/user_dashboard.dart';
 import 'package:flutter/material.dart';
 
 class SignupPage extends StatelessWidget {
@@ -49,6 +51,7 @@ class _RegisterFormState extends State<RegisterForm> {
   TextEditingController usernameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+  bool _isAdmin = false;
 
   bool _obscureText = true;
   bool _isLoading = false;
@@ -139,41 +142,58 @@ class _RegisterFormState extends State<RegisterForm> {
               validator: _validatePassword,
             ),
             SizedBox(height: 30),
+            CheckboxListTile(
+              title: Text('Register as Admin'),
+              value: _isAdmin,
+              onChanged: (bool? value) {
+                setState(() {
+                  _isAdmin = value ?? false;
+                });
+              },
+            ),
+
+            SizedBox(height: 30),
             _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : SizedBox(
               height: 60,
               child: FilledButton(
-                style: ButtonStyle(
-                  backgroundColor:
-                  MaterialStateProperty.all<Color>(Colors.blue),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                ),
+                // ... existing code ...
+
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     setState(() {
                       _isLoading = true;
                     });
-                    var result = await AuthenticationHelper().signUp(
+                    var authHelper = AuthenticationHelper();
+                    var result = await authHelper.signUp(
                       email: emailController.text,
                       password: passwordController.text,
                       username: usernameController.text,
+                      isAdmin: _isAdmin, // Pass the isAdmin flag
                     );
                     setState(() {
                       _isLoading = false;
                     });
-                    if (result == null) {
-                      Navigator.pushAndRemoveUntil(
+                    if (result['error'] == null) {
+                      bool isAdmin = result['isAdmin'];
+                      if (isAdmin) {
+                        Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const Dashboard()),
-                              (Route<dynamic> route) => false);
+                          MaterialPageRoute(builder: (context) => AdminDashboard()),
+                              (Route<dynamic> route) => false,
+                        );
+                      } else {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserDashboard()),
+                              (Route<dynamic> route) => false,
+                        );
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(result)));
+                        SnackBar(content: Text(result['error'])),
+                      );
                     }
                   }
                 },

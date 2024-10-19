@@ -1,6 +1,8 @@
+import 'package:fin_mentor/admin_dashboard.dart';
 import 'package:fin_mentor/components/authentication.dart';
 import 'package:fin_mentor/dashboard.dart';
 import 'package:fin_mentor/signupPage.dart';
+import 'package:fin_mentor/user_dashboard.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -120,37 +122,40 @@ class _LoginFormState extends State<LoginForm> {
                 : SizedBox(
               height: 60,
               child: FilledButton(
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all<Color>(
-                      Colors.blue),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                ),
+                // ... existing code ...
+
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     setState(() {
                       _isLoading = true;
                     });
-                    var result = await AuthenticationHelper().signIn(
+                    var authHelper = AuthenticationHelper();
+                    var result = await authHelper.signIn(
                       email: email.text,
                       password: password.text,
                     );
                     setState(() {
                       _isLoading = false;
                     });
-                    if (result == null) {
-                      Navigator.pushAndRemoveUntil(
+                    if (result['error'] == null) {
+                      bool isAdmin = result['isAdmin'];
+                      if (isAdmin) {
+                        Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                              const Dashboard()),
-                              (Route<dynamic> route) => false);
+                          MaterialPageRoute(builder: (context) => AdminDashboard()),
+                              (Route<dynamic> route) => false,
+                        );
+                      } else {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserDashboard()),
+                              (Route<dynamic> route) => false,
+                        );
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(result)));
+                        SnackBar(content: Text(result['error'])),
+                      );
                     }
                   }
                 },
