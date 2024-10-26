@@ -55,6 +55,8 @@ class RegisterForm extends StatefulWidget {
 class _RegisterFormState extends State<RegisterForm> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController usernameController = TextEditingController();
+  TextEditingController firstNameController = TextEditingController();
+  TextEditingController lastNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   bool _isAdmin = false;
@@ -90,6 +92,18 @@ class _RegisterFormState extends State<RegisterForm> {
     }
     return null;
   }
+  String? _validateFirstname(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Please enter your Firstname";
+    }
+    return null;
+  }
+  String? _validateLastname(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Please enter your Lastname";
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +115,28 @@ class _RegisterFormState extends State<RegisterForm> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            TextFormField(
+              controller: firstNameController,
+              decoration: const InputDecoration(
+                labelText: 'First Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(25)),
+                ),
+              ),
+              validator: _validateFirstname,
+            ),
+            SizedBox(height: 20,),
+            TextFormField(
+              controller: lastNameController,
+              decoration: const InputDecoration(
+                labelText: 'Last Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(25)),
+                ),
+              ),
+              validator: _validateLastname,
+            ),
+            SizedBox(height: 20,),
             TextFormField(
               controller: usernameController,
               decoration: const InputDecoration(
@@ -174,9 +210,11 @@ class _RegisterFormState extends State<RegisterForm> {
                     var authHelper = AuthenticationHelper();
                     var result = await authHelper.signUp(
                       email: emailController.text,
+                      firstname: firstNameController.text,
+                      lastname: lastNameController.text,
                       password: passwordController.text,
                       username: usernameController.text,
-                      isAdmin: _isAdmin, // Pass the isAdmin flag
+                      isAdmin: _isAdmin,
                     );
                     setState(() {
                       _isLoading = false;

@@ -49,6 +49,8 @@ class AuthenticationHelper {
   // Modify the signUp method to include the isAdmin flag
   Future<Map<String, dynamic>> signUp({
     required String email,
+    required String firstname,
+    required String lastname,
     required String password,
     required String username,
     bool isAdmin = false,
@@ -58,7 +60,7 @@ class AuthenticationHelper {
       await _auth.createUserWithEmailAndPassword(email: email, password: password);
 
       // Create user document in Firestore with the isAdmin flag
-      await _createUserDocument(username: username, email: email, isAdmin: isAdmin);
+      await _createUserDocument(username: username, firstname: firstname, lastname: lastname, email: email, isAdmin: isAdmin);
 
       // Return null error and the isAdmin flag
       return {'error': null, 'isAdmin': isAdmin};
@@ -86,6 +88,8 @@ class AuthenticationHelper {
   // Modify the _createUserDocument to include isAdmin
   Future<void> _createUserDocument({
     required String username,
+    required String firstname,
+    required String lastname,
     required String email,
     bool isAdmin = false, // Add this parameter
   }) async {
@@ -94,6 +98,8 @@ class AuthenticationHelper {
       'username': username,
       'email': email,
       'isAdmin': isAdmin,
+      'firstname': firstname,
+      'lastname': lastname,
       'dateJoined': DateTime.now().millisecondsSinceEpoch / 1000,
     };
     await userDoc.set(userData);

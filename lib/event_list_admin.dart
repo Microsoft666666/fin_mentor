@@ -1,9 +1,54 @@
-// event_list_admin.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class EventListAdmin extends StatelessWidget {
   const EventListAdmin({Key? key}) : super(key: key);
+
+  Future<void> _showParticipantsDialog(
+      BuildContext context, List<dynamic> uids) async {
+    List<Map<String, dynamic>> participants = [];
+
+    for (var uid in uids) {
+      // Fetch each user's details based on the uid
+      DocumentSnapshot userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (userDoc.exists) {
+        // Assuming the user document has 'firstName' and 'lastName' fields
+        participants.add({
+          'firstName': userDoc['firstname'],
+          'lastName': userDoc['lastname'],
+        });
+      }
+    }
+
+    // Show dialog with participants
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Participants"),
+          content: participants.isEmpty
+              ? Text("No participants found.")
+              : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: participants.map((participant) {
+              return ListTile(
+                title: Text(
+                    "${participant['firstName']} ${participant['lastName']}"),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,8 +58,9 @@ class EventListAdmin extends StatelessWidget {
           .orderBy('date')
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return Center(child: CircularProgressIndicator());
+        }
         final events = snapshot.data!.docs;
         return ListView(
           children: [
@@ -26,7 +72,7 @@ class EventListAdmin extends StatelessWidget {
                 DocumentSnapshot event = events[index];
                 List<dynamic> signUps = event['signUps'] ?? [];
                 return Card(
-                  color: Color.fromRGBO(204, 234, 211, 0.5019607843137255),
+                  color: Color.fromRGBO(204, 234, 211, 0.5),
                   child: ListTile(
                     leading: Icon(Icons.event, size: 40),
                     title: Text(event['name'],
@@ -34,7 +80,6 @@ class EventListAdmin extends StatelessWidget {
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.black)),
-                    // subtitle: Text('Sign-Ups: ${signUps.length}'), change to richtext
                     subtitle: RichText(
                       text: TextSpan(
                         style: TextStyle(
@@ -53,13 +98,20 @@ class EventListAdmin extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          TextSpan(
-                              text: 'Participants Who Register: ',
-                              style: TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              )),
+                          WidgetSpan(
+                            child: InkWell(
+                              onTap: () => _showParticipantsDialog(
+                                  context, signUps),
+                              child: Text(
+                                'Participants Who Registered: ',
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                           TextSpan(
                             text: '${signUps.length}',
                             style: TextStyle(
@@ -67,7 +119,6 @@ class EventListAdmin extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-
                         ],
                       ),
                     ),
