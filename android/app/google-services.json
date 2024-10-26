@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "152026471272",
+    "project_id": "fin-mentor",
+    "storage_bucket": "fin-mentor.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152026471272:android:e427241838ecb4b93454dd",
+        "android_client_info": {
+          "package_name": "com.codingmind.fin_mentor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq-cwjeyDrcaRxg0uV4vJAQWxCndlgAGM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152026471272:android:e48a8a1b81be49643454dd",
+        "android_client_info": {
+          "package_name": "com.example.fin_mentor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq-cwjeyDrcaRxg0uV4vJAQWxCndlgAGM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

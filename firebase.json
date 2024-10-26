@@ -1,0 +1,22 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fin-mentor",
+          "appId": "1:152026471272:android:e427241838ecb4b93454dd",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fin-mentor",
+          "configurations": {
+            "android": "1:152026471272:android:e427241838ecb4b93454dd",
+            "ios": "1:152026471272:ios:38edf57f49420e803454dd"
+          }
+        }
+      }
+    }
+  }
+}
