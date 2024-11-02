@@ -1,7 +1,7 @@
-import 'package:fin_mentor/admin_dashboard.dart';
-import 'package:fin_mentor/components/authentication.dart';
+import 'package:fin_mentor/admin/admin_dashboard.dart';
+import 'package:fin_mentor/auth/authentication.dart';
 import 'package:fin_mentor/dashboard.dart';
-import 'package:fin_mentor/user_dashboard.dart';
+import 'package:fin_mentor/user/user_dashboard.dart';
 import 'package:flutter/material.dart';
 
 class SignupPage extends StatelessWidget {

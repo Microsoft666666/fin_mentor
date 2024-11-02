@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'components/authentication.dart';
+import '../auth/authentication.dart';
 
 class EventListUser extends StatefulWidget {
   EventListUser({Key? key}) : super(key: key);

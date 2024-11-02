@@ -1,12 +1,12 @@
 // main.dart
-import 'package:fin_mentor/admin_dashboard.dart';
-import 'package:fin_mentor/loginPage.dart';
-import 'package:fin_mentor/user_dashboard.dart';
+import 'package:fin_mentor/admin/admin_dashboard.dart';
+import 'package:fin_mentor/auth/loginPage.dart';
+import 'package:fin_mentor/user/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'components/authentication.dart';
-import 'firebase_options.dart';
+import 'auth/authentication.dart';
+import 'auth/firebase_options.dart';
 import 'material_theme/theme.dart';
 
 void main() async {

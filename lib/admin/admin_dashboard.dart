@@ -1,11 +1,11 @@
 // admin_dashboard.dart
-import 'package:fin_mentor/event_form.dart';
-import 'package:fin_mentor/event_list_admin.dart';
-import 'package:fin_mentor/loginPage.dart';
+import 'package:fin_mentor/admin/event_form.dart';
+import 'package:fin_mentor/admin/event_list_admin.dart';
+import 'package:fin_mentor/auth/loginPage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'components/authentication.dart';
+import '../auth/authentication.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({Key? key}) : super(key: key);
