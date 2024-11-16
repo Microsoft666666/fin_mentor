@@ -21,7 +21,7 @@ class SignupPage extends StatelessWidget {
                     radius: 80,
                     backgroundColor: Colors.transparent,
                     child: ClipOval(
-                      child: Image.asset('assets/logo.png'),
+                      child: Image.asset('assets/logo.jpg'),
                     )),
                 // Text(
                 //   'Fin Mentor',

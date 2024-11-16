@@ -1,116 +1,62 @@
-// admin_dashboard.dart
-import 'package:fin_mentor/admin/event_form.dart';
-import 'package:fin_mentor/admin/event_list_admin.dart';
-import 'package:fin_mentor/auth/loginPage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'admin_homepage.dart';
+import 'admin_resources.dart';
 
-import '../auth/authentication.dart';
-
-class AdminDashboard extends StatelessWidget {
+class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
 
-  void _logout(BuildContext context) async {
-    AuthenticationHelper().isAdmin = false;
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-      (Route<dynamic> route) => false,
-    );
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  int _currentIndex = 0;
+
+  // Pages for each tab
+  final List<Widget> _pages = [
+    const AdminHomepage(),
+    const AdminResources(),
+  ];
+
+  void _onTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset('assets/logo.png'),
-          ),
-          title: Text('Admin Dashboard',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontStyle: FontStyle.italic)),
-          actions: [
-            IconButton(
-                onPressed: () async {
-                  TextEditingController passwordController =
-                  TextEditingController();
-                  await showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Delete Account'),
-                          content: TextField(
-                            controller: passwordController,
-                            obscureText: true,
-                            decoration:
-                            InputDecoration(hintText: 'Enter password'),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                await AuthenticationHelper()
-                                    .deleteAccount(passwordController.text);
-                                Navigator.pop(context);
-                                Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => LoginPage()));
-                              },
-                              child: Text('Delete'),
-                            ),
-                          ],
-                        );
-                      });
-                  // AuthenticationHelper().deleteAccount();
-                },
-                icon: const Icon(Icons.delete)),
-            IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () => _logout(context),
-            ),
-          ],
+      appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset('assets/logo.jpg'),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/background.png'),
-              opacity: 0.4,
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                // Expanded(child: EventForm()),
-                Expanded(child: EventListAdmin()),
-              ],
-            ),
+        title: const Text(
+          'Admin Dashboard',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontStyle: FontStyle.italic,
           ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => EventForm()),
-            );
-          },
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+      ),
+      body: _pages[_currentIndex], // Display the selected page
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex, // Active tab index
+        onTap: _onTap, // Handle tab taps
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Homepage',
           ),
-          label: Text('Add Event'),
-          icon: Icon(Icons.event),
-        ));
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book),
+            label: 'Resources',
+          ),
+        ],
+      ),
+    );
   }
 }
