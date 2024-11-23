@@ -45,7 +45,7 @@ class _EventListUserState extends State<EventListUser> {
             bool isSignedUp = signUps.contains(userId);
 
             return Card(
-              color: const Color.fromRGBO(204, 234, 211, 0.5019607843137255),
+
               child: ExpansionTile(
                 onExpansionChanged: (value) {
                   setState(() {

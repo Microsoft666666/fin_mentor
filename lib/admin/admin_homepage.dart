@@ -1,3 +1,4 @@
+import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth/authentication.dart';
@@ -30,6 +31,7 @@ class AdminHomepage extends StatelessWidget {
 
       ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: EventApp.accentColor,
         onPressed: () {
           Navigator.push(
             context,
@@ -39,8 +41,8 @@ class AdminHomepage extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
-        label: const Text('Add Event'),
-        icon: const Icon(Icons.event),
+        label: Text('Add Event', style: TextStyle(color: EventApp.surfaceColor),),
+        icon: Icon(Icons.event, color: EventApp.surfaceColor,),
       ),
     );
   }

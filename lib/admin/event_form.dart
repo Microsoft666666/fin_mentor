@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 
 class EventForm extends StatefulWidget {
@@ -87,7 +88,6 @@ class _EventFormState extends State<EventForm> {
               SizedBox(height: 20),
               Card(
                 elevation: 4,
-                color: Color.fromRGBO(204, 234, 211, 0.7),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Form(
@@ -98,14 +98,26 @@ class _EventFormState extends State<EventForm> {
                         Text('Event Name',
                             textAlign: TextAlign.left,
                             style: TextStyle(
-                                color: Colors.black,
+                                color: EventApp.surfaceColor,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 fontStyle: FontStyle.italic)),
                         TextFormField(
+
+                          style: TextStyle(color: EventApp.surfaceColor),
                           decoration: InputDecoration(
                               labelText: 'Event Name',
-                              border: OutlineInputBorder()),
+                              labelStyle: TextStyle(color: EventApp.surfaceColor),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor, width: 2), // Border color when focused
+                            ),
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor), // General border color
+                            ),
+                          ),
                           validator: (value) =>
                           value!.isEmpty ? 'Enter event name' : null,
                           onSaved: (value) => _name = value!,
@@ -114,7 +126,7 @@ class _EventFormState extends State<EventForm> {
                         Text('Event Info',
                             textAlign: TextAlign.left,
                             style: TextStyle(
-                                color: Colors.black,
+                                color: EventApp.surfaceColor,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 fontStyle: FontStyle.italic)),
@@ -122,7 +134,16 @@ class _EventFormState extends State<EventForm> {
                           maxLines: 4,
                           decoration: InputDecoration(
                               labelText: 'Event Info',
-                              border: OutlineInputBorder()),
+                              labelStyle: TextStyle(color: EventApp.surfaceColor),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor, width: 2), // Border color when focused
+                            ),
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(color: EventApp.surfaceColor), // General border color
+                            ),),
                           validator: (value) =>
                           value!.isEmpty ? 'Enter event info' : null,
                           onSaved: (value) => _info = value!,
@@ -133,7 +154,7 @@ class _EventFormState extends State<EventForm> {
                             RichText(
                               text: TextSpan(
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: EventApp.surfaceColor,
                                   fontSize: 20,
                                   height: 1.5,
                                 ),
@@ -141,7 +162,7 @@ class _EventFormState extends State<EventForm> {
                                   TextSpan(
                                     text: 'Event Date: \n',
                                     style: TextStyle(
-                                      color: Colors.black,
+                                      color: EventApp.surfaceColor,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -157,7 +178,7 @@ class _EventFormState extends State<EventForm> {
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
-                                Color.fromRGBO(247, 253, 247, 0.85),
+                                EventApp.surfaceColor,
                               ),
                               onPressed: _pickDate,
                               child: Row(
@@ -178,7 +199,7 @@ class _EventFormState extends State<EventForm> {
                             RichText(
                               text: TextSpan(
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: EventApp.surfaceColor,
                                   fontSize: 20,
                                   height: 1.5,
                                 ),
@@ -186,7 +207,7 @@ class _EventFormState extends State<EventForm> {
                                   TextSpan(
                                     text: 'Event Time: \n',
                                     style: TextStyle(
-                                      color: Colors.black,
+                                      color: EventApp.surfaceColor,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 
 class EventListAdmin extends StatelessWidget {
@@ -72,14 +73,13 @@ class EventListAdmin extends StatelessWidget {
                 DocumentSnapshot event = events[index];
                 List<dynamic> signUps = event['signUps'] ?? [];
                 return Card(
-                  color: Color.fromRGBO(204, 234, 211, 0.5),
                   child: ListTile(
-                    leading: Icon(Icons.event, size: 40),
+                    leading: Icon(Icons.event, size: 40, color: EventApp.surfaceColor,),
                     title: Text(event['name'],
                         style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black)),
+                            color: EventApp.surfaceColor)),
                     subtitle: RichText(
                       text: TextSpan(
                         style: TextStyle(
@@ -93,7 +93,7 @@ class EventListAdmin extends StatelessWidget {
                             text:
                             'Date: ${DateTime.fromMillisecondsSinceEpoch(event['date']).toString().substring(0, 16)}\n',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: EventApp.surfaceColor,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -115,7 +115,7 @@ class EventListAdmin extends StatelessWidget {
                           TextSpan(
                             text: '${signUps.length}',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: EventApp.surfaceColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

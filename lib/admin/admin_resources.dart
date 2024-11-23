@@ -75,8 +75,7 @@ class _AdminResourcesState extends State<AdminResources> {
                       builder: (context) => PdfViewPinch(controller: slides)),
                 );
               },
-              child: const Card(
-                color: Color.fromRGBO(204, 234, 211, 0.5),
+              child: Card(
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Row(
@@ -89,16 +88,17 @@ class _AdminResourcesState extends State<AdminResources> {
                           Text(
                             "Instructor Slides",
                             style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold),
+                                fontSize: 24, fontWeight: FontWeight.bold, color: EventApp.surfaceColor),
                           ),
                           Text(
                             "Get ready for the next class",
-                            style: TextStyle(fontSize: 15),
+                            style: TextStyle(fontSize: 15, color: EventApp.surfaceColor),
                           )
                         ],
                       ),
                       Icon(
                         Icons.chevron_right,
+                        color: EventApp.surfaceColor,
                         size: 50,
                       )
                     ],
