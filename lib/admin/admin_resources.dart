@@ -1,3 +1,4 @@
+import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -29,8 +30,8 @@ class _AdminResourcesState extends State<AdminResources> {
                       builder: (context) => PdfViewPinch(controller: igFile)),
                 );
               },
-              child: const Card(
-                color: Color.fromRGBO(204, 234, 211, 0.5),
+              child: Card(
+
                 child: Padding(
                   padding: EdgeInsets.all(10),
                   child: Row(
@@ -43,16 +44,17 @@ class _AdminResourcesState extends State<AdminResources> {
                           Text(
                             "Instructor Guide",
                             style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold),
+                                fontSize: 24, fontWeight: FontWeight.bold, color: EventApp.surfaceColor),
                           ),
                           Text(
                             "Your handbook for the next chapter.",
-                            style: TextStyle(fontSize: 15),
+                            style: TextStyle(fontSize: 15, color: EventApp.surfaceColor),
                           )
                         ],
                       ),
                       Icon(
                         Icons.chevron_right,
+                        color: EventApp.surfaceColor,
                         size: 50,
                       )
                     ],

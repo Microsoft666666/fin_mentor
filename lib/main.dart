@@ -16,13 +16,42 @@ void main() async {
 }
 
 class EventApp extends StatelessWidget {
+  const EventApp({super.key});
+
+  static final Color primaryColor = Color(0xFF287B6A);
+  static final Color secondaryColor = Color(0xFF26515A);
+  static final Color surfaceColor = Color(0xFFDAE4E8);
+  static final Color accentColor = Color(0xFF0C2E4C);
+
+  static final ColorScheme colorScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary: primaryColor,
+    onPrimary: accentColor,
+    secondary: secondaryColor,
+    onSecondary: surfaceColor,
+    error: Colors.red,
+    onError: Colors.white,
+    surface: surfaceColor,
+    onSurface: accentColor
+
+  );
   @override
   Widget build(BuildContext context) {
-    MaterialTheme customTheme = MaterialTheme(TextTheme());
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Event App',
-      theme: customTheme.theme(MaterialTheme.lightMediumContrastScheme()),
+      theme: ThemeData(
+        colorScheme: colorScheme,
+        useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary
+        ),
+        cardTheme: CardTheme(
+            color: colorScheme.secondary,
+
+        )
+      ),
       home: AuthenticationWrapper(),
     );
   }

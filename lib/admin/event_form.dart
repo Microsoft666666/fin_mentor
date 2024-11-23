@@ -79,13 +79,7 @@ class _EventFormState extends State<EventForm> {
                   fontStyle: FontStyle.italic))),
       body: Container(
         height: double.infinity,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/background.png'),
-            opacity: 0.4,
-            fit: BoxFit.cover,
-          ),
-        ),
+
         child: SingleChildScrollView(
           padding: EdgeInsets.all(16),
           child: Column(

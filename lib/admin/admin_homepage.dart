@@ -22,13 +22,6 @@ class AdminHomepage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/background.png'),
-            opacity: 0.4,
-            fit: BoxFit.cover,
-          ),
-        ),
         child: Column(
           children: [
             Expanded(child: EventListAdmin()),
