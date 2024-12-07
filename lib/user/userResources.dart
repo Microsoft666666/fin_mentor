@@ -23,7 +23,6 @@ class _UserResourcesState extends State<UserResources> {
 
               },
               child: const Card(
-                  color: const Color.fromRGBO(204, 234, 211, 0.5019607843137255),
                   child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Row(
@@ -35,13 +34,13 @@ class _UserResourcesState extends State<UserResources> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Participant Guide",
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                           Text("Your handbook for the next chapter.",
-                          style: TextStyle(fontSize: 15),)
+                          style: TextStyle(fontSize: 15, color: Colors.white),)
                         ],
                       ),
-                      Icon(Icons.chevron_right, size: 50,)
+                      Icon(Icons.chevron_right, size: 50, color: Colors.white,)
                     ],
                   ),
                 )

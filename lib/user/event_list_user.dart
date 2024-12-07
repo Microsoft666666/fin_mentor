@@ -115,7 +115,7 @@ class _EventListUserState extends State<EventListUser> {
                       'signUps': FieldValue.arrayUnion([userId]),
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Signed up for event')),q
+                      const SnackBar(content: Text('Signed up for event')),
                     );
                   },
                   style: ElevatedButton.styleFrom(
