@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/authentication.dart';
@@ -55,16 +56,16 @@ class _EventListUserState extends State<EventListUser> {
                 },
                 // leading: Icon(Icons.event, size: 25),
                 title: Text( "🗓️ ${event['name']}",
-                    style: const TextStyle(
+                    style:  TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black)),
+                        color: EventApp.surfaceColor)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                         'Date: ${DateTime.fromMillisecondsSinceEpoch(event['date']).toString().substring(0, 16)}',
-                        style: const TextStyle(color: Colors.black, fontSize: 16)),
+                        style:  TextStyle(color: EventApp.surfaceColor, fontSize: 16)),
                     Text(!isMoreInfoList[index] ? 'More Info' : 'Less Info',
                         style: const TextStyle(color: Colors.blueAccent)),
                     Icon(!isMoreInfoList[index]
@@ -92,8 +93,8 @@ class _EventListUserState extends State<EventListUser> {
                           ),
                           TextSpan(
                             text: event['info'],
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: EventApp.surfaceColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -102,22 +103,44 @@ class _EventListUserState extends State<EventListUser> {
                     ),
                   ),
                 ],
-                trailing: AuthenticationHelper().user != null? ElevatedButton(
+                trailing: AuthenticationHelper().user != null
+                    ? ElevatedButton(
                   onPressed: isSignedUp
                       ? null
                       : () async {
-                          await FirebaseFirestore.instance
-                              .collection('events')
-                              .doc(event.id)
-                              .update({
-                            'signUps': FieldValue.arrayUnion([userId]),
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Signed up for event')),
-                          );
-                        },
-                  child: Text(isSignedUp ? 'Signed Up' : 'Sign Up'),
-                ): Text('Sign Up to\njoin events', style: const TextStyle(fontSize: 14)) ,
+                    await FirebaseFirestore.instance
+                        .collection('events')
+                        .doc(event.id)
+                        .update({
+                      'signUps': FieldValue.arrayUnion([userId]),
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Signed up for event')),q
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSignedUp
+                        ? Theme.of(context).primaryColor.withOpacity(0.7) // Brighter disabled color
+                        : Theme.of(context).primaryColor, // Active state
+                    foregroundColor: Colors.white, // Text color
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // Rounded corners
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Button padding
+                  ),
+                  child: Text(
+                    isSignedUp ? 'Signed Up' : 'Sign Up',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+                    : Text(
+                  'Sign Up to\njoin events',
+                  style: const TextStyle(fontSize: 14),
+                ),
+
               ),
             );
           },
