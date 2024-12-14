@@ -8,7 +8,7 @@ class EventListAdmin extends StatelessWidget {
   Future<void> _showParticipantsDialog(
       BuildContext context, List<dynamic> uids) async {
     List<Map<String, dynamic>> participants = [];
-
+    List<TextEditingController> controllers = [];
     for (var uid in uids) {
       // Fetch each user's details based on the uid
       DocumentSnapshot userDoc =
@@ -20,6 +20,7 @@ class EventListAdmin extends StatelessWidget {
           'firstName': userDoc['firstname'],
           'lastName': userDoc['lastname'],
         });
+        controllers.add(TextEditingController());
       }
     }
 
@@ -31,15 +32,28 @@ class EventListAdmin extends StatelessWidget {
           title: Text("Participants"),
           content: participants.isEmpty
               ? Text("No participants found.")
-              : Column(
-            mainAxisSize: MainAxisSize.min,
-            children: participants.map((participant) {
-              return ListTile(
-                title: Text(
-                    "${participant['firstName']} ${participant['lastName']}"),
-              );
-            }).toList(),
-          ),
+              : SingleChildScrollView(
+                child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: participants.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              Map<String, dynamic> participant = entry.value;
+                return Column(
+                  children: [Text(
+                      "${participant['firstName']} ${participant['lastName']}"),
+                    TextField(
+                      controller: controllers[index],
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Number of hours participated",
+                        border: OutlineInputBorder()
+                      ),
+                    )
+                  ]
+                );
+                            }).toList(),
+                          ),
+              ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
