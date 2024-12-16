@@ -15,7 +15,7 @@ class EventListAdmin extends StatelessWidget {
       await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (userDoc.exists) {
-        // Assuming the user document has 'firstName' and 'lastName' fields
+
         participants.add({
           'firstName': userDoc['firstname'],
           'lastName': userDoc['lastname'],
@@ -24,7 +24,7 @@ class EventListAdmin extends StatelessWidget {
       }
     }
 
-    // Show dialog with participants
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
