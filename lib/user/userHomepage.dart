@@ -168,7 +168,7 @@ class _UserHomepageState extends State<UserHomepage> {
                                   '${value.toInt()}h',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[700],
+                                    color: Colors.grey[200],
                                   ),
                                 ),
                               );
@@ -189,7 +189,7 @@ class _UserHomepageState extends State<UserHomepage> {
                       drawVerticalLine: false,
                       horizontalInterval: 1,
                       getDrawingHorizontalLine: (value) => FlLine(
-                        color: Colors.grey[300]!,
+                        color: Colors.grey[200]!,
                         strokeWidth: 1,
                       ),
                     ),
@@ -218,7 +218,7 @@ class _UserHomepageState extends State<UserHomepage> {
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.grey[800],
+          color: Colors.grey[300],
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -230,7 +230,6 @@ class _UserHomepageState extends State<UserHomepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(title: const Text("User Homepage")),
       body: FutureBuilder<DocumentSnapshot>(
         future: userDocFuture,
         builder: (context, snapshot) {
