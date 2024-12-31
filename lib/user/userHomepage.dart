@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class UserHomepage extends StatefulWidget {
   const UserHomepage({Key? key}) : super(key: key);
@@ -14,6 +14,11 @@ class _UserHomepageState extends State<UserHomepage> {
   late String uid;
   late Future<DocumentSnapshot> userDocFuture;
 
+  /// Our filter options (could be "Weekly", "Monthly", "All", etc.)
+  final List<String> _rangeOptions = ["Weekly", "Monthly", "All"];
+  /// The currently selected filter
+  String _selectedRange = "Weekly";
+
   @override
   void initState() {
     super.initState();
@@ -21,243 +26,276 @@ class _UserHomepageState extends State<UserHomepage> {
     userDocFuture = FirebaseFirestore.instance.collection('users').doc(uid).get();
   }
 
-  Widget getTitles(double value, TitleMeta meta, List<DateTime> dates) {
-    final style = TextStyle(
-      color: Colors.grey[800],
-      fontWeight: FontWeight.bold,
-      fontSize: 12,
-    );
+  /// Convert the `participation_log` map from Firestore
+  /// (key = date string, value = hours) into a List of MapEntry<DateTime, double>.
+  List<MapEntry<DateTime, double>> _parseParticipationLog(DocumentSnapshot doc) {
+    if (!doc.exists) return [];
 
-    if (value < 0 || value >= dates.length) return Container();
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return [];
 
-    final date = dates[value.toInt()];
-    final weekday = _getWeekdayAbbreviation(date.weekday);
-    return SideTitleWidget(
-      axisSide: meta.axisSide,
-      child: Text(weekday, style: style),
+    if (!data.containsKey('participation_log')) return [];
+    final logRaw = data['participation_log'];
+    if (logRaw is! Map<String, dynamic>) return [];
+
+    final entries = <MapEntry<DateTime, double>>[];
+    logRaw.forEach((key, value) {
+      if (key is String && key.trim().isNotEmpty) {
+        final date = DateTime.tryParse(key);
+        final hours = (value is num) ? value.toDouble() : 0.0;
+        if (date != null) {
+          entries.add(MapEntry(date, hours));
+        }
+      }
+    });
+
+    // Sort ascending by date
+    entries.sort((a, b) => a.key.compareTo(b.key));
+    return entries;
+  }
+
+  /// Filter entries for the last [days] days.
+  List<MapEntry<DateTime, double>> _filterByDays(
+      List<MapEntry<DateTime, double>> allEntries,
+      int days,
+      ) {
+    final now = DateTime.now();
+    final cutoff = now.subtract(Duration(days: days));
+    return allEntries.where((e) => e.key.isAfter(cutoff)).toList();
+  }
+
+  /// Returns the widget with the bar chart and total hours, given the (date, hours) entries.
+  Widget _buildChartWidget(List<MapEntry<DateTime, double>> entries) {
+    if (entries.isEmpty) {
+      return const Center(child: Text('No data available'));
+    }
+
+    // If all are zero
+    if (entries.every((e) => e.value == 0)) {
+      return const Center(child: Text('No data available'));
+    }
+
+    double maxY = 0;
+    final barData = <BarChartGroupData>[];
+    final dates = <DateTime>[];
+
+    for (int i = 0; i < entries.length; i++) {
+      final e = entries[i];
+      dates.add(e.key);
+      if (e.value > maxY) maxY = e.value;
+
+      barData.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: e.value,
+              width: 20,
+              borderRadius: BorderRadius.circular(6),
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.lightBlueAccent],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Calculate total hours
+    final totalHours = entries.fold<double>(0, (sum, entry) => sum + entry.value);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Total Hours:",
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "${totalHours.toStringAsFixed(1)}h",
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "Activity Chart",
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: (maxY < 1) ? 1 : maxY,
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          getTitlesWidget: (value, meta) =>
+                              _buildBottomTitle(value, meta, dates),
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            if (value % 1 == 0) {
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                child: Text(
+                                  '${value.toInt()}h',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              );
+                            }
+                            return Container();
+                          },
+                        ),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: 1,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color: Colors.grey[300]!,
+                        strokeWidth: 1,
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: barData,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  String _getWeekdayAbbreviation(int weekday) {
-    switch (weekday) {
-      case 1:
-        return 'Mon';
-      case 2:
-        return 'Tue';
-      case 3:
-        return 'Wed';
-      case 4:
-        return 'Thu';
-      case 5:
-        return 'Fri';
-      case 6:
-        return 'Sat';
-      case 7:
-        return 'Sun';
-      default:
-        return '';
+  /// Build the bottom (x-axis) label: e.g. "M/d"
+  Widget _buildBottomTitle(
+      double value, TitleMeta meta, List<DateTime> dates) {
+    if (value < 0 || value >= dates.length) {
+      return Container();
     }
+    final date = dates[value.toInt()];
+    final label = "${date.month}/${date.day}"; // e.g. "1/5"
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.grey[800],
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      appBar: AppBar(title: const Text("User Homepage")),
       body: FutureBuilder<DocumentSnapshot>(
         future: userDocFuture,
         builder: (context, snapshot) {
+          // 1) Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          // If there's an error or no data, show a message
-          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+          // 2) Error or no data
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              !snapshot.data!.exists) {
             return const Center(child: Text('No data available'));
           }
 
-          final doc = snapshot.data!;
-          final data = doc.data() as Map<String, dynamic>?;
+          // 3) Parse all entries from doc
+          final allEntries = _parseParticipationLog(snapshot.data!);
 
-          // Check if 'hours' field exists and is a map
-          if (data == null || !data.containsKey('hours') || data['hours'] == null) {
-            return const Center(child: Text('No data available'));
+          // Decide how to filter based on _selectedRange
+          List<MapEntry<DateTime, double>> filteredEntries;
+          if (_selectedRange == "Weekly") {
+            filteredEntries = _filterByDays(allEntries, 7);
+          } else if (_selectedRange == "Monthly") {
+            filteredEntries = _filterByDays(allEntries, 30);
+          } else {
+            // "All": no filter
+            filteredEntries = allEntries;
           }
 
-          final hoursRaw = data['hours'];
-          if (hoursRaw is! Map<String, dynamic>) {
-            return const Center(child: Text('No data available'));
-          }
-
-          final hoursMap = hoursRaw;
-
-          if (hoursMap.isEmpty) {
-            return const Center(child: Text('No data available'));
-          }
-
-          // Convert the hours map into a list of (DateTime, double) pairs
-          List<MapEntry<DateTime, double>> entries = hoursMap.entries
-              .map((e) {
-            final key = e.key.trim();
-            if (key.isEmpty) return null;
-            final date = DateTime.tryParse(key);
-            final value = e.value is num ? (e.value as num).toDouble() : 0.0;
-            if (date != null) {
-              return MapEntry(date, value);
-            }
-            return null;
-          })
-              .where((element) => element != null)
-              .cast<MapEntry<DateTime, double>>()
-              .toList();
-
-          // If no valid entries after parsing
-          if (entries.isEmpty) {
-            return const Center(child: Text('No data available'));
-          }
-
-          // Sort by date
-          entries.sort((a, b) => a.key.compareTo(b.key));
-
-          // Take the last 7 days or so to display
-          const daysToShow = 7;
-          if (entries.length > daysToShow) {
-            entries = entries.sublist(entries.length - daysToShow);
-          }
-
-          // Check if all values are zero
-          if (entries.every((element) => element.value == 0)) {
-            return const Center(child: Text('No data available'));
-          }
-
-          // Prepare data for chart
-          final barData = <BarChartGroupData>[];
-          final dates = <DateTime>[];
-          double maxY = 0;
-          for (int i = 0; i < entries.length; i++) {
-            final e = entries[i];
-            dates.add(e.key);
-            final yValue = e.value;
-            if (yValue > maxY) maxY = yValue;
-            barData.add(
-              BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: yValue,
-                    width: 20,
-                    borderRadius: BorderRadius.circular(6),
-                    gradient: const LinearGradient(
-                      colors: [Colors.blue, Colors.lightBlueAccent],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
+          return Column(
+            children: [
+              // Our dropdown
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Text(
+                      "Select Range:",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    DropdownButton<String>(
+                      value: _selectedRange,
+                      items: _rangeOptions.map((String item) {
+                        return DropdownMenuItem<String>(
+                          value: item,
+                          child: Text(item),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedRange = newValue;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            );
-          }
 
-          // Calculate total hours
-          final totalHours = entries.fold<double>(0, (sum, e) => sum + e.value);
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Total Hours:",
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "${totalHours.toStringAsFixed(1)}h",
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  "Activity This Week",
-                  style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: BarChart(
-                        BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: (maxY < 1) ? 1 : maxY,
-                          titlesData: FlTitlesData(
-                            show: true,
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                getTitlesWidget: (value, meta) =>
-                                    getTitles(value, meta, dates),
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 40,
-                                interval: 1,
-                                getTitlesWidget: (value, meta) {
-                                  if (value % 1 == 0) {
-                                    return SideTitleWidget(
-                                      axisSide: meta.axisSide,
-                                      child: Text(
-                                        '${value.toInt()}h',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[700],
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return Container();
-                                },
-                              ),
-                            ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                          ),
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            horizontalInterval: 1,
-                            getDrawingHorizontalLine: (value) => FlLine(
-                              color: Colors.grey[300]!,
-                              strokeWidth: 1,
-                            ),
-                          ),
-                          borderData: FlBorderData(
-                            show: false,
-                          ),
-                          barGroups: barData,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              // Expanded chart
+              Expanded(
+                child: _buildChartWidget(filteredEntries),
+              ),
+            ],
           );
         },
       ),
