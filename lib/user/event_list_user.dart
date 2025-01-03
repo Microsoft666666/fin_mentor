@@ -118,19 +118,31 @@ class _EventListUserState extends State<EventListUser> {
                       const SnackBar(content: Text('Signed up for event')),
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isSignedUp
-                        ? EventApp.accentColor// Brighter disabled color
-                        : Theme.of(context).primaryColor, // Active state
-                    foregroundColor: Colors.white, // Text color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Rounded corners
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(MaterialState.disabled)) {
+                        return EventApp.accentColor;
+                      }
+                      return Theme.of(context).primaryColor;
+                    }),
+                    foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(MaterialState.disabled)) {
+                        return Colors.white;
+                      }
+                      return Colors.white;
+                    }),
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Button padding
+                    padding: MaterialStateProperty.all<EdgeInsets>(
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
                   ),
                   child: Text(
                     isSignedUp ? 'Signed Up' : 'Sign Up',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -140,6 +152,7 @@ class _EventListUserState extends State<EventListUser> {
                   'Sign Up to\njoin events',
                   style: const TextStyle(fontSize: 14),
                 ),
+
 
               ),
             );
