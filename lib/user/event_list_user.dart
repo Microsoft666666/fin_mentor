@@ -120,7 +120,7 @@ class _EventListUserState extends State<EventListUser> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isSignedUp
-                        ? Theme.of(context).primaryColor.withOpacity(0.7) // Brighter disabled color
+                        ? EventApp.accentColor// Brighter disabled color
                         : Theme.of(context).primaryColor, // Active state
                     foregroundColor: Colors.white, // Text color
                     shape: RoundedRectangleBorder(
