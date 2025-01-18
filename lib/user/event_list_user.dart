@@ -1,24 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/authentication.dart';
+import '../main.dart'; // Ensure this imports your `EventApp` class correctly.
 
 class EventListUser extends StatefulWidget {
   EventListUser({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return _EventListUserState();
-  }
+  State<StatefulWidget> createState() => _EventListUserState();
 }
 
 class _EventListUserState extends State<EventListUser> {
-  List<bool> isMoreInfoList =[];
+  List<bool> isMoreInfoList = [];
   String? userId;
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     userId = AuthenticationHelper().user?.uid;
   }
@@ -31,9 +29,12 @@ class _EventListUserState extends State<EventListUser> {
           .orderBy('date')
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
+
         final events = snapshot.data!.docs;
+
         if (isMoreInfoList.length != events.length) {
           isMoreInfoList = List.filled(events.length, false);
         }
@@ -41,36 +42,50 @@ class _EventListUserState extends State<EventListUser> {
         return ListView.builder(
           itemCount: events.length,
           itemBuilder: (context, index) {
-            DocumentSnapshot event = events[index];
-            List<dynamic> signUps = event['signUps'] ?? [];
-            bool isSignedUp = signUps.contains(userId);
+            final event = events[index];
+            final data = event.data() as Map<String, dynamic>?;
+
+            if (data == null) {
+              return const SizedBox.shrink(); // Skip invalid data.
+            }
+
+            final List<dynamic> signUps = data['signUps'] ?? [];
+            final bool isSignedUp = signUps.contains(userId);
 
             return Card(
-
               child: ExpansionTile(
                 onExpansionChanged: (value) {
                   setState(() {
                     isMoreInfoList[index] = !isMoreInfoList[index];
-                    print(isMoreInfoList[index]);
                   });
                 },
-                // leading: Icon(Icons.event, size: 25),
-                title: Text( "🗓️ ${event['name']}",
-                    style:  TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: EventApp.surfaceColor)),
+                title: Text(
+                  "🗓️ ${data['name'] ?? 'Unnamed Event'}",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: EventApp.surfaceColor,
+                  ),
+                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        'Date: ${DateTime.fromMillisecondsSinceEpoch(event['date']).toString().substring(0, 16)}',
-                        style:  TextStyle(color: EventApp.surfaceColor, fontSize: 16)),
-                    Text(!isMoreInfoList[index] ? 'More Info' : 'Less Info',
-                        style: const TextStyle(color: Colors.blueAccent)),
-                    Icon(!isMoreInfoList[index]
-                        ? Icons.keyboard_arrow_down_outlined
-                        : Icons.keyboard_arrow_up_outlined),
+                      'Date: ${data['date'] != null ? DateTime.fromMillisecondsSinceEpoch(data['date']).toString().substring(0, 16) : 'Unknown Date'}',
+                      style: TextStyle(
+                        color: EventApp.surfaceColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      !isMoreInfoList[index] ? 'More Info' : 'Less Info',
+                      style: const TextStyle(color: Colors.blueAccent),
+                    ),
+                    Icon(
+                      !isMoreInfoList[index]
+                          ? Icons.keyboard_arrow_down_outlined
+                          : Icons.keyboard_arrow_up_outlined,
+                    ),
                   ],
                 ),
                 children: <Widget>[
@@ -92,7 +107,37 @@ class _EventListUserState extends State<EventListUser> {
                             ),
                           ),
                           TextSpan(
-                            text: event['info'],
+                            text: data['info'] ?? 'No information available.',
+                            style: TextStyle(
+                              color: EventApp.surfaceColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'Referenced Pages:\n',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: data.containsKey('pageFrom') && data.containsKey('pageTo')
+                                ? '${data['pageFrom']}-${data['pageTo']}'
+                                : 'N/A',
                             style: TextStyle(
                               color: EventApp.surfaceColor,
                               fontWeight: FontWeight.bold,
@@ -115,22 +160,28 @@ class _EventListUserState extends State<EventListUser> {
                       'signUps': FieldValue.arrayUnion([userId]),
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Signed up for event')),
+                      const SnackBar(
+                        content: Text('Signed up for event'),
+                      ),
                     );
                   },
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                      if (states.contains(MaterialState.disabled)) {
-                        return EventApp.accentColor;
-                      }
-                      return Theme.of(context).primaryColor;
-                    }),
-                    foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                      if (states.contains(MaterialState.disabled)) {
+                    backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                          (states) {
+                        if (states.contains(MaterialState.disabled)) {
+                          return EventApp.accentColor;
+                        }
+                        return Theme.of(context).primaryColor;
+                      },
+                    ),
+                    foregroundColor: MaterialStateProperty.resolveWith<Color>(
+                          (states) {
+                        if (states.contains(MaterialState.disabled)) {
+                          return Colors.white;
+                        }
                         return Colors.white;
-                      }
-                      return Colors.white;
-                    }),
+                      },
+                    ),
                     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -148,12 +199,10 @@ class _EventListUserState extends State<EventListUser> {
                     ),
                   ),
                 )
-                    : Text(
+                    : const Text(
                   'Sign Up to\njoin events',
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(fontSize: 14),
                 ),
-
-
               ),
             );
           },
