@@ -166,7 +166,7 @@ class _EventFormState extends State<EventForm> {
                             Expanded(
                                 child: TextFormField(
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^[0-9][1-9]*')),
+                                FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*')),
                               ],
                               keyboardType: TextInputType.number,
 
@@ -190,7 +190,7 @@ class _EventFormState extends State<EventForm> {
                             Expanded(
                                 child: TextFormField(
                                   inputFormatters: [
-                                    FilteringTextInputFormatter.allow(RegExp(r'^[0-9][1-9]*')),
+                                    FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*')),
                                   ],
                                   keyboardType: TextInputType.number,
 
