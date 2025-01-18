@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class EventListAdmin extends StatelessWidget {
   const EventListAdmin({Key? key}) : super(key: key);
@@ -108,6 +109,9 @@ class EventListAdmin extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 TextField(
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*'))
+                                  ],
                                   controller: controllers[index],
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(

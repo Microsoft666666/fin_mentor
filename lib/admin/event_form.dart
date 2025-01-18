@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fin_mentor/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class EventForm extends StatefulWidget {
   @override
@@ -147,6 +148,61 @@ class _EventFormState extends State<EventForm> {
                           validator: (value) =>
                           value!.isEmpty ? 'Enter event info' : null,
                           onSaved: (value) => _info = value!,
+                        ),
+                        SizedBox(height: 10),
+                        Row(
+                          children: [
+                            RichText(text: TextSpan(
+                              text: "Referenced Pages: ",
+                              style: TextStyle(
+                                color: EventApp.surfaceColor,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold
+                              )
+                            )),
+                            Expanded(
+                                child: TextFormField(
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^[0-9][1-9]*')),
+                              ],
+                              keyboardType: TextInputType.number,
+
+                              decoration: InputDecoration(
+                                labelText: "From",
+                                labelStyle: TextStyle(color: EventApp.surfaceColor),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
+                                ),
+                              ),
+
+                            )),
+                            SizedBox(width: 10),
+                            Text("To",
+                              style: TextStyle(
+                                color: EventApp.surfaceColor,
+                                fontSize: 20,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                                child: TextFormField(
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^[0-9][1-9]*')),
+                                  ],
+                                  keyboardType: TextInputType.number,
+
+                                  decoration: InputDecoration(
+                                    labelText: "Page",
+                                    labelStyle: TextStyle(color: EventApp.surfaceColor),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
+                                    ),
+                                  ),
+
+                                )),
+
+
+                          ],
                         ),
                         SizedBox(height: 10),
                         Row(
