@@ -14,7 +14,8 @@ class _EventFormState extends State<EventForm> {
   String _info = '';
   DateTime _date = DateTime.now();
   TimeOfDay _time = TimeOfDay.now(); // Added for time
-
+  int _pageFrom = 0;
+  int _pageTo = 0;
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -32,6 +33,8 @@ class _EventFormState extends State<EventForm> {
         'name': _name,
         'info': _info,
         'date': eventDateTime.millisecondsSinceEpoch,
+        'pageFrom': _pageFrom,
+        'pageTo': _pageTo,
         'signUps': [],
       });
 
@@ -174,7 +177,7 @@ class _EventFormState extends State<EventForm> {
                                   borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
                                 ),
                               ),
-
+                              onSaved: (value) => _pageFrom = int.parse(value!),
                             )),
                             SizedBox(width: 10),
                             Text("To",
@@ -198,7 +201,7 @@ class _EventFormState extends State<EventForm> {
                                       borderSide: BorderSide(color: EventApp.surfaceColor), // Border color when not focused
                                     ),
                                   ),
-
+                                  onSaved: (value) => _pageTo = int.parse(value!),
                                 )),
 
 
