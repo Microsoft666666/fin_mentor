@@ -70,7 +70,9 @@ class AuthenticationHelper {
     }
   }
 
-
+  Future<void> fetchUserRole() async{
+    await _fetchUserRole();
+  }
   // Fetch the user's role from Firestore
   Future<void> _fetchUserRole() async {
     try {
@@ -80,10 +82,17 @@ class AuthenticationHelper {
       } else {
         isAdmin = false;
       }
+      // Save isAdmin status in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isAdmin', isAdmin);
     } catch (e) {
       isAdmin = false;
+      // Save default isAdmin status in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isAdmin', false);
     }
   }
+
 
   // Modify the _createUserDocument to include isAdmin
   Future<void> _createUserDocument({
@@ -139,16 +148,17 @@ class AuthenticationHelper {
       // Sign out from Firebase Auth
       await _auth.signOut();
 
-      // Clear login state from SharedPreferences
-      await _clearLoginState();
+      // Clear login state and isAdmin flag from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
 
       // Reset the isAdmin flag
       this.isAdmin = false;
     } catch (e) {
       print('Error signing out: $e');
-      // Optionally, handle errors here
     }
   }
+
   Future<bool> deleteAccount(String password) async {
     try {
       User? user = _auth.currentUser;

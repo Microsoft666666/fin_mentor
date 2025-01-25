@@ -4,6 +4,7 @@ import 'package:fin_mentor/auth/loginPage.dart';
 import 'package:fin_mentor/user/user_dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth/authentication.dart';
 import 'auth/firebase_options.dart';
@@ -61,36 +62,46 @@ class AuthenticationWrapper extends StatefulWidget {
   @override
   _AuthenticationWrapperState createState() => _AuthenticationWrapperState();
 }
-
 class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
   final AuthenticationHelper _authHelper = AuthenticationHelper();
+  bool? isAdmin;
 
   @override
   void initState() {
     super.initState();
-    _authHelper.userChanges().listen((user) {
-      // Update UI when user changes
-    });
+    _initializeUserRole();
   }
 
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
+  Future<void> _initializeUserRole() async {
+    // Check if the user is logged in
+    if (_authHelper.user != null) {
+      // Retrieve cached isAdmin value from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        isAdmin = prefs.getBool('isAdmin') ?? false;
+      });
 
+      // Ensure the latest role is fetched and updated
+      await _authHelper.fetchUserRole();
+      setState(() {
+        isAdmin = _authHelper.isAdmin;
+      });
+    } else {
+      setState(() {
+        isAdmin = null;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_authHelper.user != null) {
-      // User is logged in, check if admin
-      if (_authHelper.isAdmin) {
-        return AdminDashboard();
-      } else {
-        return UserDashboard();
-      }
+    if (isAdmin == null) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (isAdmin == true) {
+      return AdminDashboard();
+    } else if (_authHelper.user != null) {
+      return UserDashboard();
     } else {
-      // User is not logged in
       return LoginPage();
     }
   }
