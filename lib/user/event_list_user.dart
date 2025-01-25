@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:pdfx/pdfx.dart';
 
 import '../auth/authentication.dart';
 import '../main.dart'; // Ensure this imports your `EventApp` class correctly.
@@ -119,7 +120,20 @@ class _EventListUserState extends State<EventListUser> {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(10),
-                    child: RichText(
+                    child: InkWell(
+                      onTap: () async{
+                        final pdfPinchController = PdfControllerPinch(document: PdfDocument.openAsset("assets/CH1-PG.pdf"));
+                        pdfPinchController.initialPage = int.parse(data["pageFrom"]);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => Scaffold(
+                          appBar: AppBar(
+                            title: Text("PDF Viewer"),
+                          ),
+                          body: PdfViewPinch(controller: pdfPinchController),
+                        )
+                        )
+                        );
+                      },
+                      child: RichText(
                       text: TextSpan(
                         style: const TextStyle(
                           color: Colors.blueAccent,
@@ -134,6 +148,7 @@ class _EventListUserState extends State<EventListUser> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           TextSpan(
                             text: data.containsKey('pageFrom') && data.containsKey('pageTo')
                                 ? '${data['pageFrom']}-${data['pageTo']}'
@@ -145,7 +160,7 @@ class _EventListUserState extends State<EventListUser> {
                           ),
                         ],
                       ),
-                    ),
+                    ),)
                   ),
                 ],
                 trailing: AuthenticationHelper().user != null
