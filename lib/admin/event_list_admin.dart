@@ -32,145 +32,125 @@ class EventListAdmin extends StatelessWidget {
       BuildContext context,
       List<dynamic> uids,
       int eventDateMillis,
+      String eventId, // Pass the event ID to fetch data directly
       ) async {
-    // We convert the event date in milliseconds to a nice key, e.g. "2024-01-05"
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(eventDateMillis);
-    final dateKey = "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}";
+    final eventDoc = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(eventId)
+        .get();
+
+    final participantsData = await _fetchParticipants(uids);
+
+    // Fetch hours from the same event document
+    final participationData = eventDoc.data()?['participation_hours'] ?? {};
+    final controllers = <String, TextEditingController>{};
+
+    for (var participant in participantsData) {
+      final uid = participant['uid'];
+      final storedHours = participationData[uid]?.toString() ?? '';
+      controllers[uid] = TextEditingController(text: storedHours);
+    }
 
     showModalBottomSheet(
       context: context,
-      // Allows the sheet to expand if content is tall
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (BuildContext context) {
-        return FutureBuilder<List<Map<String, dynamic>>>(
-          future: _fetchParticipants(uids),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              // Still loading data => show progress
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: const Center(child: CircularProgressIndicator()),
-              );
-            }
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Participants",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
 
-            final participants = snapshot.data ?? [];
-            // Create one text controller per participant (for hours).
-            final controllers = List.generate(
-              participants.length,
-                  (_) => TextEditingController(),
-            );
-
-            return Padding(
-              // Ensure bottom sheet avoids system insets
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
-                    const Text(
-                      "Participants",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (participants.isEmpty)
-                      const Text("No participants found.")
-                    else
-                    // Show participants + hours field
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: participants.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final participant = entry.value;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "${participant['firstName']} ${participant['lastName']}",
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*'))
-                                  ],
-                                  controller: controllers[index],
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: "Number of hours participated",
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                              ],
+                if (participantsData.isEmpty)
+                  const Text("No participants found.")
+                else
+                  Column(
+                    children: participantsData.map((participant) {
+                      final uid = participant['uid'];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${participant['firstName']} ${participant['lastName']}",
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600),
                             ),
-                          );
-                        }).toList(),
-                      ),
-
-                    // Space before action buttons
-                    const SizedBox(height: 24),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          // "Close" button
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text("Close"),
+                            const SizedBox(height: 8),
+                            TextField(
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^[1-9][0-9]*'))
+                              ],
+                              controller: controllers[uid],
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "Number of hours participated",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
                         ),
-                        ElevatedButton(
-                          // "Submit" button
-                          onPressed: participants.isNotEmpty
-                              ? () async {
-                            // Update each participant's doc in Firestore
-                            for (int i = 0; i < participants.length; i++) {
-                              final uid = participants[i]['uid'];
-                              final hoursText = controllers[i].text.trim();
-                              if (hoursText.isEmpty) continue;
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 24),
 
-                              final hours = double.tryParse(hoursText) ?? 0.0;
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text("Close"),
+                    ),
+                    ElevatedButton(
+                      onPressed: participantsData.isNotEmpty
+                          ? () async {
+                        // Update participation_hours in the event document
+                        final updatedData = {};
+                        for (var participant in participantsData) {
+                          final uid = participant['uid'];
+                          final hoursText =
+                          controllers[uid]?.text.trim();
+                          if (hoursText?.isEmpty ?? true) continue;
 
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(uid)
-                                  .set({
-                                'participation_log': {
-                                  dateKey: hours,
-                                }
-                              }, SetOptions(merge: true));
-                            }
+                          final hours =
+                              double.tryParse(hoursText!) ?? 0.0;
+                          updatedData[uid] = hours;
+                        }
 
-                            // After updating, close the bottom sheet
-                            Navigator.of(context).pop();
-                          }
-                              : null, // If no participants, do nothing
-                          child: const Text("Submit"),
-                        ),
-                      ],
+                        await FirebaseFirestore.instance
+                            .collection('events')
+                            .doc(eventId)
+                            .set({
+                          'participation_hours': updatedData,
+                        }, SetOptions(merge: true));
+
+                        Navigator.of(context).pop();
+                      }
+                          : null,
+                      child: const Text("Submit"),
                     ),
                   ],
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         );
       },
     );
@@ -241,6 +221,8 @@ class EventListAdmin extends StatelessWidget {
                                 context,
                                 signUps,
                                 eventDateMillis,
+                                event.id
+
                               ),
                               child: const Text(
                                 'Participants Who Registered: ',
