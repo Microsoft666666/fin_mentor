@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../auth/authentication.dart';
 import '../main.dart'; // Ensure this imports your `EventApp` class correctly.
@@ -20,6 +23,20 @@ class _EventListUserState extends State<EventListUser> {
   void initState() {
     super.initState();
     userId = AuthenticationHelper().user?.uid;
+  }
+
+  // Helper function: checks if the file exists in cache; if not, downloads it.
+  Future<File> _getCachedFile(String filePath, String fileUrl) async {
+    final dir = await getTemporaryDirectory();
+    final localFile = File('${dir.path}/$filePath');
+
+    if (await localFile.exists()) {
+      return localFile;
+    } else {
+      final dio = Dio();
+      await dio.download(fileUrl, localFile.path);
+      return localFile;
+    }
   }
 
   @override
@@ -118,49 +135,85 @@ class _EventListUserState extends State<EventListUser> {
                       ),
                     ),
                   ),
+                  // Referenced Pages Section
                   Padding(
                     padding: const EdgeInsets.all(10),
                     child: InkWell(
-                      onTap: () async{
-                        final pdfPinchController = PdfControllerPinch(document: PdfDocument.openAsset("assets/CH1-PG.pdf"));
-                        pdfPinchController.initialPage = int.parse(data["pageFrom"]);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => Scaffold(
-                          appBar: AppBar(
-                            title: Text("PDF Viewer"),
+                      onTap: () async {
+                        // Define file parameters.
+                        const fileName = "Participant Guide.pdf";
+                        const folder = 'Participant'; // Replace with your actual folder name.
+                        const fileUrl =
+                            'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Participant%2FParticipant%20Guide.pdf?alt=media&token=4b095aa6-1acf-4053-9609-9bea8a5f45d4';
+                        final filePath = '$folder/$fileName';
+
+                        // Check if the file is already cached.
+                        final tempDir = await getTemporaryDirectory();
+                        final localFile = File('${tempDir.path}/$filePath');
+
+                        // Show "Downloading..." SnackBar if the file isn’t cached.
+                        if (!await localFile.exists()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Downloading...')),
+                          );
+                        }
+
+                        // Retrieve the cached file (or download it).
+                        final cachedFile = await _getCachedFile(filePath, fileUrl);
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                        // Determine the initial page from the event data.
+                        final dynamic pageFromValue = data["pageFrom"];
+                        final int initialPage = (pageFromValue is String)
+                            ? (int.tryParse(pageFromValue) ?? 0)
+                            : (pageFromValue is int ? pageFromValue : 0);
+
+                        // Create the PDF controller with the specified initial page.
+                        final pdfController = PdfControllerPinch(
+                          initialPage: initialPage,
+                          document: PdfDocument.openFile(cachedFile.path),
+                        );
+
+                        // Open the PDF viewer page, passing the initialPage.
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PdfViewerScreen(
+                              title: "PDF Viewer",
+                              controller: pdfController,
+                              initialPage: initialPage,
+                            ),
                           ),
-                          body: PdfViewPinch(controller: pdfPinchController),
-                        )
-                        )
                         );
                       },
                       child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 16,
-                          height: 1.5,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text: 'Referenced Pages:\n',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: data.containsKey('pageFrom') && data.containsKey('pageTo')
+                                  ? '${data['pageFrom']}-${data['pageTo']}'
+                                  : 'N/A',
+                              style: TextStyle(
+                                color: EventApp.surfaceColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        children: [
-                          const TextSpan(
-                            text: 'Referenced Pages:\n',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          TextSpan(
-                            text: data.containsKey('pageFrom') && data.containsKey('pageTo')
-                                ? '${data['pageFrom']}-${data['pageTo']}'
-                                : 'N/A',
-                            style: TextStyle(
-                              color: EventApp.surfaceColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
                       ),
-                    ),)
+                    ),
                   ),
                 ],
                 trailing: AuthenticationHelper().user != null
@@ -223,6 +276,43 @@ class _EventListUserState extends State<EventListUser> {
           },
         );
       },
+    );
+  }
+}
+
+class PdfViewerScreen extends StatefulWidget {
+  final PdfControllerPinch controller;
+  final String title;
+  final int initialPage;
+
+  const PdfViewerScreen({
+    Key? key,
+    required this.title,
+    required this.controller,
+    required this.initialPage,
+  }) : super(key: key);
+
+  @override
+  _PdfViewerScreenState createState() => _PdfViewerScreenState();
+}
+
+class _PdfViewerScreenState extends State<PdfViewerScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame, force jump to the desired page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.jumpToPage(widget.initialPage);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: PdfViewPinch(controller: widget.controller),
     );
   }
 }
