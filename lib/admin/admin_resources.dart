@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:fin_mentor/main.dart';
 import 'package:fin_mentor/user/userResources.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -14,25 +13,13 @@ class AdminResources extends StatelessWidget {
     final dir = await getTemporaryDirectory();
     final localFile = File('${dir.path}/$filePath');
 
-    // If file exists locally, return it; otherwise, download it
+    // If file exists locally, return it; otherwise, download it.
     if (await localFile.exists()) {
       return localFile;
     } else {
       final dio = Dio();
       await dio.download(fileUrl, localFile.path);
       return localFile;
-    }
-  }
-
-  Future<String?> _getFileUrl(String folder, String fileName) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('resources')
-          .doc(folder)
-          .get();
-      return doc[fileName];
-    } catch (e) {
-      return null; // Return null if the file URL can't be fetched
     }
   }
 
@@ -47,34 +34,32 @@ class AdminResources extends StatelessWidget {
             margin: const EdgeInsets.all(8),
             child: InkWell(
               onTap: () async {
-                final fileName = 'Instructor Guide.pdf';
-                final folder = 'Admin';
-                final fileUrl = await _getFileUrl(folder, fileName);
-
-                if (fileUrl != null) {
-                  final cachedFile = await _getCachedFile(
-                    '$folder/$fileName',
-                    fileUrl,
-                  );
-
-                  final controller = PdfControllerPinch(
-                    document: PdfDocument.openFile(cachedFile.path),
-                  );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PdfViewerScreen(
-                        title: "Instructor Guide",
-                        controller: controller,
-                      ),
+                // Show a SnackBar so the user knows a download is in progress.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Downloading...')),
+                );
+                const fileName = 'Instructor Guide.pdf';
+                const folder = 'Admin';
+                const fileUrl =
+                    'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Admin%2FInstructor%20Guide.pdf?alt=media&token=b1cd5163-2b16-41fb-a5ab-df232e64930b';
+                final cachedFile = await _getCachedFile(
+                  '$folder/$fileName',
+                  fileUrl,
+                );
+                // Hide the SnackBar once download is complete.
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final controller = PdfControllerPinch(
+                  document: PdfDocument.openFile(cachedFile.path),
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PdfViewerScreen(
+                      title: "Instructor Guide",
+                      controller: controller,
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to load PDF.')),
-                  );
-                }
+                  ),
+                );
               },
               child: Card(
                 child: Padding(
@@ -121,34 +106,30 @@ class AdminResources extends StatelessWidget {
             margin: const EdgeInsets.all(8),
             child: InkWell(
               onTap: () async {
-                final fileName = 'Slides.pdf';
-                final folder = 'Admin';
-                final fileUrl = await _getFileUrl(folder, fileName);
-
-                if (fileUrl != null) {
-                  final cachedFile = await _getCachedFile(
-                    '$folder/$fileName',
-                    fileUrl,
-                  );
-
-                  final controller = PdfControllerPinch(
-                    document: PdfDocument.openFile(cachedFile.path),
-                  );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PdfViewerScreen(
-                        title: "Instructor Slides",
-                        controller: controller,
-                      ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Downloading...')),
+                );
+                const fileName = 'Slides.pdf';
+                const folder = 'Admin';
+                const fileUrl =
+                    'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Admin%2FSlides.pdf?alt=media&token=cceaeab3-6651-4421-a972-db16fb349401';
+                final cachedFile = await _getCachedFile(
+                  '$folder/$fileName',
+                  fileUrl,
+                );
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final controller = PdfControllerPinch(
+                  document: PdfDocument.openFile(cachedFile.path),
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PdfViewerScreen(
+                      title: "Instructor Slides",
+                      controller: controller,
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to load PDF.')),
-                  );
-                }
+                  ),
+                );
               },
               child: Card(
                 child: Padding(

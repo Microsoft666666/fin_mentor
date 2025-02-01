@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -12,24 +11,13 @@ class UserResources extends StatelessWidget {
     final dir = await getTemporaryDirectory();
     final localFile = File('${dir.path}/$filePath');
 
+    // If file exists locally, return it; otherwise, download it.
     if (await localFile.exists()) {
       return localFile;
     } else {
       final dio = Dio();
       await dio.download(fileUrl, localFile.path);
       return localFile;
-    }
-  }
-
-  Future<String?> _getFileUrl(String folder, String fileName) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('resources')
-          .doc(folder)
-          .get();
-      return doc[fileName];
-    } catch (e) {
-      return null;
     }
   }
 
@@ -44,34 +32,31 @@ class UserResources extends StatelessWidget {
             margin: const EdgeInsets.all(8),
             child: InkWell(
               onTap: () async {
-                final fileName = 'Participant Guide.pdf';
-                final folder = 'Participant';
-                final fileUrl = await _getFileUrl(folder, fileName);
-
-                if (fileUrl != null) {
-                  final cachedFile = await _getCachedFile(
-                    '$folder/$fileName',
-                    fileUrl,
-                  );
-
-                  final controller = PdfControllerPinch(
-                    document: PdfDocument.openFile(cachedFile.path),
-                  );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PdfViewerScreen(
-                        title: "Participant Guide",
-                        controller: controller,
-                      ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Downloading...')),
+                );
+                // Direct download URL for the PDF.
+                const fileUrl =
+                    'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Participant%2FParticipant%20Guide.pdf?alt=media&token=4b095aa6-1acf-4053-9609-9bea8a5f45d4';
+                const fileName = 'Participant Guide.pdf';
+                const folder = 'Participant';
+                final cachedFile = await _getCachedFile(
+                  '$folder/$fileName',
+                  fileUrl,
+                );
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final controller = PdfControllerPinch(
+                  document: PdfDocument.openFile(cachedFile.path),
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PdfViewerScreen(
+                      title: "Participant Guide",
+                      controller: controller,
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to load PDF.')),
-                  );
-                }
+                  ),
+                );
               },
               child: const Card(
                 child: Padding(
@@ -113,7 +98,7 @@ class UserResources extends StatelessWidget {
 class PdfViewerScreen extends StatelessWidget {
   final PdfControllerPinch controller;
   final String title;
-  const PdfViewerScreen({super.key, required this.title, required this.controller});
+  const PdfViewerScreen({Key? key, required this.title, required this.controller}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
