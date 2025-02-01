@@ -151,37 +151,36 @@ class _EventListUserState extends State<EventListUser> {
                         final tempDir = await getTemporaryDirectory();
                         final localFile = File('${tempDir.path}/$filePath');
 
-                        // Show "Downloading..." SnackBar if the file isn’t cached.
+                        // Show the "Downloading..." SnackBar only if file isn't cached.
                         if (!await localFile.exists()) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Downloading...')),
                           );
                         }
 
-                        // Retrieve the cached file (or download it).
+                        // Retrieve the cached file or download it.
                         final cachedFile = await _getCachedFile(filePath, fileUrl);
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                        // Determine the initial page from the event data.
+                        // Set initial page from the event data.
                         final dynamic pageFromValue = data["pageFrom"];
                         final int initialPage = (pageFromValue is String)
                             ? (int.tryParse(pageFromValue) ?? 0)
                             : (pageFromValue is int ? pageFromValue : 0);
-
-                        // Create the PDF controller with the specified initial page.
                         final pdfController = PdfControllerPinch(
                           initialPage: initialPage,
                           document: PdfDocument.openFile(cachedFile.path),
                         );
 
-                        // Open the PDF viewer page, passing the initialPage.
+                        // Open the PDF viewer (from the same page as the pageFrom value).
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => PdfViewerScreen(
-                              title: "PDF Viewer",
-                              controller: pdfController,
-                              initialPage: initialPage,
+                            builder: (context) => Scaffold(
+                              appBar: AppBar(
+                                title: const Text("PDF Viewer"),
+                              ),
+                              body: PdfViewPinch(controller: pdfController),
                             ),
                           ),
                         );
@@ -276,43 +275,6 @@ class _EventListUserState extends State<EventListUser> {
           },
         );
       },
-    );
-  }
-}
-
-class PdfViewerScreen extends StatefulWidget {
-  final PdfControllerPinch controller;
-  final String title;
-  final int initialPage;
-
-  const PdfViewerScreen({
-    Key? key,
-    required this.title,
-    required this.controller,
-    required this.initialPage,
-  }) : super(key: key);
-
-  @override
-  _PdfViewerScreenState createState() => _PdfViewerScreenState();
-}
-
-class _PdfViewerScreenState extends State<PdfViewerScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // After the first frame, force jump to the desired page.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.jumpToPage(widget.initialPage);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: PdfViewPinch(controller: widget.controller),
     );
   }
 }
