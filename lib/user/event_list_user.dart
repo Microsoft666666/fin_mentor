@@ -220,12 +220,20 @@ class _EventListUserState extends State<EventListUser> {
                   onPressed: isSignedUp
                       ? null
                       : () async {
+                    // Show a temporary pop-up
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("You're signing up for this event"),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
                     await FirebaseFirestore.instance
                         .collection('events')
                         .doc(event.id)
                         .update({
                       'signUps': FieldValue.arrayUnion([userId]),
                     });
+                    // Show confirmation after signing up
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Signed up for event'),
@@ -269,7 +277,7 @@ class _EventListUserState extends State<EventListUser> {
                     : const Text(
                   'Sign Up to\njoin events',
                   style: TextStyle(fontSize: 14),
-                ),
+              ),
               ),
             );
           },
