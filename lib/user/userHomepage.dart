@@ -12,44 +12,38 @@ class UserHomepage extends StatefulWidget {
 
 class _UserHomepageState extends State<UserHomepage> {
   late String uid;
-  late Future<DocumentSnapshot> userDocFuture;
-
-  /// Our filter options (could be "Weekly", "Monthly", "All", etc.)
+  // Filter options: Weekly, Monthly, All.
   final List<String> _rangeOptions = ["Weekly", "Monthly", "All"];
-  /// The currently selected filter
   String _selectedRange = "Weekly";
 
   @override
   void initState() {
     super.initState();
     uid = FirebaseAuth.instance.currentUser!.uid;
-    userDocFuture = FirebaseFirestore.instance.collection('users').doc(uid).get();
   }
 
-  /// Convert the `participation_log` map from Firestore
-  /// (key = date string, value = hours) into a List of MapEntry<DateTime, double>.
-  List<MapEntry<DateTime, double>> _parseParticipationLog(DocumentSnapshot doc) {
-    if (!doc.exists) return [];
-
-    final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) return [];
-
-    if (!data.containsKey('participation_log')) return [];
-    final logRaw = data['participation_log'];
-    if (logRaw is! Map<String, dynamic>) return [];
-
+  /// Build participation entries from the events where the user signed up.
+  /// For each event document, the key will be the event's date (converted from the stored timestamp)
+  /// and the value is the participation hours from the event’s participation_hours map (if any).
+  List<MapEntry<DateTime, double>> _buildParticipationEntries(QuerySnapshot snapshot) {
     final entries = <MapEntry<DateTime, double>>[];
-    logRaw.forEach((key, value) {
-      if (key is String && key.trim().isNotEmpty) {
-        final date = DateTime.tryParse(key);
-        final hours = (value is num) ? value.toDouble() : 0.0;
-        if (date != null) {
-          entries.add(MapEntry(date, hours));
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data.containsKey('date')) {
+        // Convert Firestore timestamp (or milliseconds) to DateTime.
+        final eventDate = DateTime.fromMillisecondsSinceEpoch(data['date']);
+        double hours = 0.0;
+        if (data.containsKey('participation_hours')) {
+          final partMap = data['participation_hours'];
+          if (partMap is Map<String, dynamic> && partMap.containsKey(uid)) {
+            final value = partMap[uid];
+            hours = (value is num) ? value.toDouble() : 0.0;
+          }
         }
+        entries.add(MapEntry(eventDate, hours));
       }
-    });
-
-    // Sort ascending by date
+    }
+    // Sort entries by date (oldest first).
     entries.sort((a, b) => a.key.compareTo(b.key));
     return entries;
   }
@@ -70,7 +64,7 @@ class _UserHomepageState extends State<UserHomepage> {
       return const Center(child: Text('No data available'));
     }
 
-    // If all are zero
+    // If all values are zero, show a friendly message.
     if (entries.every((e) => e.value == 0)) {
       return const Center(child: Text('No data available'));
     }
@@ -80,16 +74,16 @@ class _UserHomepageState extends State<UserHomepage> {
     final dates = <DateTime>[];
 
     for (int i = 0; i < entries.length; i++) {
-      final e = entries[i];
-      dates.add(e.key);
-      if (e.value > maxY) maxY = e.value;
+      final entry = entries[i];
+      dates.add(entry.key);
+      if (entry.value > maxY) maxY = entry.value;
 
       barData.add(
         BarChartGroupData(
           x: i,
           barRods: [
             BarChartRodData(
-              toY: e.value,
+              toY: entry.value,
               width: 20,
               borderRadius: BorderRadius.circular(6),
               gradient: const LinearGradient(
@@ -103,7 +97,7 @@ class _UserHomepageState extends State<UserHomepage> {
       );
     }
 
-    // Calculate total hours
+    // Calculate total hours.
     final totalHours = entries.fold<double>(0, (sum, entry) => sum + entry.value);
 
     return Padding(
@@ -206,13 +200,10 @@ class _UserHomepageState extends State<UserHomepage> {
   }
 
   /// Build the bottom (x-axis) label: e.g. "M/d"
-  Widget _buildBottomTitle(
-      double value, TitleMeta meta, List<DateTime> dates) {
-    if (value < 0 || value >= dates.length) {
-      return Container();
-    }
+  Widget _buildBottomTitle(double value, TitleMeta meta, List<DateTime> dates) {
+    if (value < 0 || value >= dates.length) return Container();
     final date = dates[value.toInt()];
-    final label = "${date.month}/${date.day}"; // e.g. "1/5"
+    final label = "${date.month}/${date.day}";
     return SideTitleWidget(
       axisSide: meta.axisSide,
       child: Text(
@@ -230,37 +221,31 @@ class _UserHomepageState extends State<UserHomepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: FutureBuilder<DocumentSnapshot>(
-        future: userDocFuture,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('events')
+            .where('signUps', arrayContains: uid)
+            .orderBy('date')
+            .snapshots(),
         builder: (context, snapshot) {
-          // 1) Loading
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          // 2) Error or no data
-          if (snapshot.hasError ||
-              !snapshot.hasData ||
-              !snapshot.data!.exists) {
-            return const Center(child: Text('No data available'));
-          }
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-          // 3) Parse all entries from doc
-          final allEntries = _parseParticipationLog(snapshot.data!);
+          // Build participation entries from the events snapshot.
+          final allEntries = _buildParticipationEntries(snapshot.data!);
 
-          // Decide how to filter based on _selectedRange
+          // Filter based on the selected range.
           List<MapEntry<DateTime, double>> filteredEntries;
           if (_selectedRange == "Weekly") {
             filteredEntries = _filterByDays(allEntries, 7);
           } else if (_selectedRange == "Monthly") {
             filteredEntries = _filterByDays(allEntries, 30);
           } else {
-            // "All": no filter
             filteredEntries = allEntries;
           }
 
           return Column(
             children: [
-              // Our dropdown
+              // Dropdown filter.
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -289,11 +274,8 @@ class _UserHomepageState extends State<UserHomepage> {
                   ],
                 ),
               ),
-
-              // Expanded chart
-              Expanded(
-                child: _buildChartWidget(filteredEntries),
-              ),
+              // Expanded chart.
+              Expanded(child: _buildChartWidget(filteredEntries)),
             ],
           );
         },

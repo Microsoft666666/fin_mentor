@@ -32,7 +32,7 @@ class EventListAdmin extends StatelessWidget {
       BuildContext context,
       List<dynamic> uids,
       int eventDateMillis,
-      String eventId, // Pass the event ID to fetch data directly
+      String eventId,
       ) async {
     final eventDoc = await FirebaseFirestore.instance
         .collection('events')
@@ -41,8 +41,12 @@ class EventListAdmin extends StatelessWidget {
 
     final participantsData = await _fetchParticipants(uids);
 
-    // Fetch hours from the same event document
-    final participationData = eventDoc.data()?['participation_hours'] ?? {};
+    // Ensure participation_hours is a map
+    Map<String, dynamic> participationData = {};
+    if (eventDoc.exists && eventDoc.data()?.containsKey('participation_hours') == true) {
+      participationData = Map<String, dynamic>.from(eventDoc.data()!['participation_hours']);
+    }
+
     final controllers = <String, TextEditingController>{};
 
     for (var participant in participantsData) {
@@ -94,8 +98,7 @@ class EventListAdmin extends StatelessWidget {
                             const SizedBox(height: 8),
                             TextField(
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                    RegExp(r'^[1-9][0-9]*'))
+                                FilteringTextInputFormatter.allow(RegExp(r'^[1-9][0-9]*'))
                               ],
                               controller: controllers[uid],
                               keyboardType: TextInputType.number,
@@ -121,24 +124,22 @@ class EventListAdmin extends StatelessWidget {
                     ElevatedButton(
                       onPressed: participantsData.isNotEmpty
                           ? () async {
-                        // Update participation_hours in the event document
-                        final updatedData = {};
+                        final updatedData = Map<String, dynamic>.from(participationData);
+
                         for (var participant in participantsData) {
                           final uid = participant['uid'];
-                          final hoursText =
-                          controllers[uid]?.text.trim();
+                          final hoursText = controllers[uid]?.text.trim();
                           if (hoursText?.isEmpty ?? true) continue;
 
-                          final hours =
-                              double.tryParse(hoursText!) ?? 0.0;
-                          updatedData[uid] = hours;
+                          final hours = double.tryParse(hoursText!) ?? 0.0;
+                          updatedData[uid] = hours; // Update the map with the new value
                         }
 
                         await FirebaseFirestore.instance
                             .collection('events')
                             .doc(eventId)
                             .set({
-                          'participation_hours': updatedData,
+                          'participation_hours': updatedData, // Ensure it's stored as a map
                         }, SetOptions(merge: true));
 
                         Navigator.of(context).pop();
@@ -155,6 +156,7 @@ class EventListAdmin extends StatelessWidget {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
