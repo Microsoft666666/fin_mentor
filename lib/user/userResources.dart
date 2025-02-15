@@ -95,18 +95,91 @@ class UserResources extends StatelessWidget {
   }
 }
 
-class PdfViewerScreen extends StatelessWidget {
-  final PdfControllerPinch controller;
+class PdfViewerScreen extends StatefulWidget {
   final String title;
-  const PdfViewerScreen({Key? key, required this.title, required this.controller}) : super(key: key);
+  final PdfControllerPinch controller;
+
+  const PdfViewerScreen({
+    Key? key,
+    required this.title,
+    required this.controller,
+  }) : super(key: key);
+
+  @override
+  State<PdfViewerScreen> createState() => _PdfViewerScreenState();
+}
+
+class _PdfViewerScreenState extends State<PdfViewerScreen> {
+  late PdfControllerPinch _pdfController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pdfController = widget.controller;
+  }
+
+  @override
+  void dispose() {
+    _pdfController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey,
       appBar: AppBar(
-        title: const Text("PDF Viewer"),
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.navigate_before),
+            onPressed: () {
+              _pdfController.previousPage(
+                curve: Curves.ease,
+                duration: const Duration(milliseconds: 100),
+              );
+            },
+          ),
+          PdfPageNumber(
+            controller: _pdfController,
+            builder: (_, loadingState, page, pagesCount) => Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '$page/${pagesCount ?? 0}',
+                style: const TextStyle(fontSize: 22),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.navigate_next),
+            onPressed: () {
+              _pdfController.nextPage(
+                curve: Curves.ease,
+                duration: const Duration(milliseconds: 100),
+              );
+            },
+          ),
+        ],
       ),
-      body: PdfViewPinch(controller: controller),
+      body: FutureBuilder<void>(
+        future: Future.delayed(const Duration(milliseconds: 200)), // Ensure some delay before rendering
+        builder: (context, snapshot) {
+          return PdfViewPinch(
+            controller: _pdfController,
+            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+              options: const DefaultBuilderOptions(),
+              documentLoaderBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+              pageLoaderBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+              errorBuilder: (_, error) =>
+                  Center(child: Text(error.toString())),
+            ),
+          );
+        },
+      ),
     );
   }
 }
+

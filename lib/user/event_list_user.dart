@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fin_mentor/user/userResources.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:path_provider/path_provider.dart';
@@ -138,53 +139,52 @@ class _EventListUserState extends State<EventListUser> {
                   // Referenced Pages Section
                   Padding(
                     padding: const EdgeInsets.all(10),
-                    child: InkWell(
-                      onTap: () async {
-                        // Define file parameters.
-                        const fileName = "Participant Guide.pdf";
-                        const folder = 'Participant'; // Replace with your actual folder name.
-                        const fileUrl =
-                            'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Participant%2FParticipant%20Guide.pdf?alt=media&token=4b095aa6-1acf-4053-9609-9bea8a5f45d4';
-                        final filePath = '$folder/$fileName';
+                    child: InkWell(onTap: () async {
+                      // Define file parameters.
+                      const fileName = "Participant Guide.pdf";
+                      const folder = 'Participant';
+                      const fileUrl =
+                          'https://firebasestorage.googleapis.com/v0/b/fin-mentor.firebasestorage.app/o/Participant%2FParticipant%20Guide.pdf?alt=media&token=4b095aa6-1acf-4053-9609-9bea8a5f45d4';
+                      final filePath = '$folder/$fileName';
 
-                        // Check if the file is already cached.
-                        final tempDir = await getTemporaryDirectory();
-                        final localFile = File('${tempDir.path}/$filePath');
-
-                        // Show the "Downloading..." SnackBar only if file isn't cached.
-                        if (!await localFile.exists()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Downloading...')),
-                          );
-                        }
-
-                        // Retrieve the cached file or download it.
-                        final cachedFile = await _getCachedFile(filePath, fileUrl);
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                        // Set initial page from the event data.
-                        final dynamic pageFromValue = data["pageFrom"];
-                        final int initialPage = (pageFromValue is String)
-                            ? (int.tryParse(pageFromValue) ?? 0)
-                            : (pageFromValue is int ? pageFromValue : 0);
-                        final pdfController = PdfControllerPinch(
-                          initialPage: initialPage,
-                          document: PdfDocument.openFile(cachedFile.path),
+                      // Show "Downloading..." if the file isn't cached.
+                      final tempDir = await getTemporaryDirectory();
+                      final localFile = File('${tempDir.path}/$filePath');
+                      if (!await localFile.exists()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Downloading...')),
                         );
+                      }
 
-                        // Open the PDF viewer (from the same page as the pageFrom value).
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Scaffold(
-                              appBar: AppBar(
-                                title: const Text("PDF Viewer"),
-                              ),
-                              body: PdfViewPinch(controller: pdfController),
-                            ),
+                      // Retrieve the cached file or download it.
+                      final cachedFile = await _getCachedFile(filePath, fileUrl);
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                      // Convert event's pageFrom value to an integer.
+                      final dynamic pageFromValue = data["pageFrom"];
+                      final int initialPage = (pageFromValue is String)
+                          ? (int.tryParse(pageFromValue) ?? 1)
+                          : (pageFromValue is int ? pageFromValue : 1);
+
+                      // Create a PdfControllerPinch with the cached file and initial page.
+                      final pdfController = PdfControllerPinch(
+                        initialPage: initialPage,
+                        document: PdfDocument.openFile(cachedFile.path),
+                      );
+
+                      // Open the PDF viewer using the new screen with page navigation.
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfViewerScreen(
+                            title: "PDF Viewer",
+                            controller: pdfController,
                           ),
-                        );
-                      },
+                        ),
+                      );
+                    },
+
+
                       child: RichText(
                         text: TextSpan(
                           style: const TextStyle(
